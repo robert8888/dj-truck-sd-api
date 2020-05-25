@@ -1,0 +1,14 @@
+{
+  "name": "dj-truck-sd-api",
+  "version": "1.0.0",
+  "description": "sound cloud api for dj truck app",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "robert.kami88@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
