@@ -5,28 +5,32 @@ module.exports.renderHome = function(args){
     <html lang="en">
     <head>
     <style>
-        * {
-            margin:0;
-            padding:0;
-        }
+
         html, body{
             height: 100%;
         }
+        main {
+            padding:30px;
+        }
         div {
-            display:flex; 
-            justify-content:center; 
-            align-content:center; 
             flex-direction:column; 
-            text-align: center;
             width:100%; 
             height:100%
+        }
+        ul {
+            list-style: circle;
         }
     </style>
     </head>
     <body >
-        <div style="">
-           <h3>Hellow</h3>
-        </div>
+        <main>
+           <h3>This is dj truck soundcloud api. </h3>
+           <h5>SoundCluod Api contains follow routes:</h5>
+           <ul>
+                <li>/download?id=</li>
+                <li>/search?id= &maxResult=</li>
+           </ul>
+        </main>
     </body>
 `
 }
