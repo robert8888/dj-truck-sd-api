@@ -105,7 +105,7 @@ SoundCloudDl.prototype = Object.create({}, {
                 if (!match) throw new Error("Unable to find hsl url");
                 const hslUrl = [
                     match[0] + "stream/hls?client_id=" + clientId, 
-                    match[0] + "preview/hls?client_id=" + clientId
+                    match[1] + "preview/hls?client_id=" + clientId
                 ];
                 let url = null;
                 for (let i = 0; i < hslUrl.length && !url; i++) {
