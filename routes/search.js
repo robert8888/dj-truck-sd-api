@@ -38,6 +38,7 @@ router.get("/search", async (req, res) =>{
     const results = await scdl.search(query, limit, resultParse);
     if(!results){
         res.status(404).send("Not found");
+        return;
     }
     res.setHeader("Content-type", "aplication/json")
     res.json(results);

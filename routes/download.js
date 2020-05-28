@@ -8,6 +8,7 @@ router.get("/download", async (req, res) =>{
     const results = await sc.download(id);
     if(!results){
         res.status(404).send("Not found");
+        return;
     }
     res.setHeader('Content-type', 'audio/mpeg');
     res.setHeader('Content-length', results.fileSize)

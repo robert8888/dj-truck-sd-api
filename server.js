@@ -4,6 +4,7 @@ const cors = require("cors");
 const { renderHome } = require("./pages/homeTpl");
 const search = require("./routes/search");
 const download = require("./routes/download");
+const resolve = require("./routes/resolve");
 
 const PORT = process.env.PORT || 80;
 
@@ -12,7 +13,7 @@ app.use(cors());
 
 app.use("/", search);
 app.use("/", download);
-
+app.use("/", resolve);
 
 app.get("/", (req, res) => {
     const home = renderHome({});

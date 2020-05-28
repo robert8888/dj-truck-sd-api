@@ -56,15 +56,25 @@ SoundCloudDl.prototype = Object.create({}, {
         }
     },
 
-    resovleUrl: {
+
+    //to do finish this 
+    resolve: {
         enumerable: false,
         configurable: false,
         writable: false,
-        value: async function (url) {
+        value: async function (id, url) {
             const clientId = await this.getClientId();
-            const callUrl = this.apiV2Url + `/resolve?url=${url}&client_id=${clientId}`;
-            const response = await fetch(callUrl);
-            console.log(response)
+            let json;
+            if(id){
+                const trackUrl = this.apiV2Url + `/tracks/${id}?client_id=${clientId}&app_version=1590494738`
+                json = await fetch(trackUrl).then(res => res.json())
+                
+            } else if(url){
+                const callUrl = this.apiV2Url + `/resolve?url=${url}&client_id=${clientId}`;
+                json = await fetch(callUrl).then(res => res.json());    
+            }
+            //console.log(json)
+            return json
         }
     },
 
@@ -97,15 +107,14 @@ SoundCloudDl.prototype = Object.create({}, {
             try {
                 if (!id) throw new Error("Function expect id parametr")
                 const clientId = await this.getClientId();
-                const trackUrl = this.apiV2Url + `/tracks/${id}?client_id=${clientId}&app_version=1590494738`
-                const permalink = await fetch(trackUrl).then(res => res.json()).then(json => json.permalink_url);
+                const permalink = (await this.resolve(id)).permalink_url;
                 const pageContent = await fetch(permalink).then(res => res.text());
                 const pattern = /https:\/\/api-v2\.soundcloud\.com\/media\/soundcloud:tracks:\d+\/[^\/]+\//;
                 const match = pageContent.match(pattern)
                 if (!match) throw new Error("Unable to find hsl url");
                 const hslUrl = [
                     match[0] + "stream/hls?client_id=" + clientId, 
-                    match[1] + "preview/hls?client_id=" + clientId
+                    match[0] + "preview/hls?client_id=" + clientId
                 ];
                 let url = null;
                 for (let i = 0; i < hslUrl.length && !url; i++) {
