@@ -28,7 +28,7 @@ const resultParse = item => ({
             width: 500,
             height: 500,
         }
-    }
+    },
 })
 
 router.get("/search", async (req, res) =>{

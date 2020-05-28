@@ -1,9 +1,11 @@
 const fetch = require("node-fetch");
+const { m3uParser } = require("./utils");
+const Duplexify = require('duplexify');
 
-SoundCloudDl = function (serachParseData) {
-    this.serachParseData = serachParseData;
+SoundCloudDl = function (searchParser) {
+    this.serachParser = searchParser;
     this.urlBase = "https://soundcloud.com/";
-    this.apiUrlBase = "https://api-v2.soundcloud.com";
+    this.apiV2Url = "https://api-v2.soundcloud.com";
 };
 
 SoundCloudDl.prototype = Object.create({}, {
@@ -47,9 +49,22 @@ SoundCloudDl.prototype = Object.create({}, {
         value: async function () {
             if (!this._clientId) {
                 const ids = await this._getClientId();
+
                 this._clientId = ids[0]
             }
             return this._clientId;
+        }
+    },
+
+    resovleUrl: {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: async function (url) {
+            const clientId = await this.getClientId();
+            const callUrl = this.apiV2Url + `/resolve?url=${url}&client_id=${clientId}`;
+            const response = await fetch(callUrl);
+            console.log(response)
         }
     },
 
@@ -57,21 +72,70 @@ SoundCloudDl.prototype = Object.create({}, {
         enumerable: false,
         configurable: false,
         writable: false,
-        value: async function (query, limit = 10, parseData = this.parseSearchData) {
-            if (!parseData) {
-                throw new Error("Serach function expect parse function which will format results")
+        value: async function (query, limit = 10, parser = this.serachParser) {
+            if (!parser) {
+                parser = item => item;
             }
             const clientId = await this.getClientId();
-            const url = `${this.apiUrlBase}/search?q=${query}&limit=${limit}&client_id=${clientId}`;
+            const url = `${this.apiV2Url}/search?q=${query}&limit=${limit}&client_id=${clientId}`;
             const result = await fetch(url);
-            if(result.status > 200){
+            if (result.status > 200) {
                 return [];
             }
             let json = await result.json();
-          //  console.log(json)
+            console.log(json);
             return json.collection
                 .filter(item => item.kind === "track")
-                .map(item => parseData(item));
+                .map(item => parser(item));
+        }
+    },
+
+    download: {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: async function (id) {
+            try {
+                if (!id) throw new Error("Function expect id parametr")
+                const clientId = await this.getClientId();
+                const trackUrl = `https://api-v2.soundcloud.com/tracks/${id}?client_id=${clientId}&app_version=1590494738`
+                const permalink = await fetch(trackUrl).then(res => res.json()).then(json => json.permalink_url);
+                const pageContent = await fetch(permalink).then(res => res.text());
+                const pattern = /https:\/\/api-v2\.soundcloud\.com\/media\/soundcloud:tracks:\d+\/[^\/]+\//;
+                const match = pageContent.match(pattern)
+                if (!match) throw new Error("Unable to find hsl url");
+                const hslUrl = [
+                    match[0] + "stream/hls?client_id=" + clientId, 
+                    match[0] + "preview/hls?client_id=" + clientId
+                ];
+                let url = null;
+                for (let i = 0; i < hslUrl.length && !url; i++) {
+                    url = await fetch(hslUrl[i]).then(res => res.json()).then(json => json.url);
+                }
+                if (!url) throw new Error("Can't find playlist url");
+                const m3u = await fetch(url).then(res => res.text()).then(playlist => m3uParser(playlist));
+                const duplex = new Duplexify();
+                const chunks = m3u.map(chunk => fetch(chunk.url));
+                const pipeChunk = async index => {
+                    //console.log(index)
+                    if (index > chunks.length - 1) {
+                        return;
+                    }
+                    const res = await chunks[index]
+                    res.body.on("data", chunk => {
+                       // console.log(duplex.destroyed)
+                        if(duplex.destroyed) return;
+                        duplex.write(chunk)
+
+                    })
+                    res.body.on("end", () => pipeChunk(++index))
+                }
+                pipeChunk(0);
+                return duplex;
+            } catch (err) {
+                console.log(err);
+                return null;
+            }
         }
     }
 })

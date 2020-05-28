@@ -12,11 +12,14 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^8.2.0",
+    "duplexify": "^4.1.1",
     "express": "^4.17.1",
     "express-cors": "0.0.3",
     "fetch": "^1.1.0",
+    "m3u8-reader": "^1.1.0",
     "node-fetch": "^2.6.0",
     "nodemon": "^2.0.4",
+    "request": "^2.88.2",
     "soundcloud-dl": "^1.0.3"
   }
 }
