@@ -23,6 +23,18 @@ const m3uParser = m3u => {
     }, [])
 }
 
+const fileSize = scM3u => {
+    const last = scM3u[scM3u.length - 1].url;
+    const pattern = /https:\/\/cf-hls-media\.sndcdn\.com\/media\/\d+\/(?<size>\d+)/
+    const match = last.match(pattern);
+    if(match && match.groups.size){
+        return match.groups.size;
+    }
+    
+    throw new Error("Can't find file size");
+}
+
 module.exports = {
-    m3uParser
+    m3uParser,
+    fileSize
 }

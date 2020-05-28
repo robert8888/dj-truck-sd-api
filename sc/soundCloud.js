@@ -1,5 +1,5 @@
 const fetch = require("node-fetch");
-const { m3uParser } = require("./utils");
+const { m3uParser, fileSize } = require("./utils");
 const Duplexify = require('duplexify');
 
 SoundCloudDl = function (searchParser) {
@@ -83,7 +83,6 @@ SoundCloudDl.prototype = Object.create({}, {
                 return [];
             }
             let json = await result.json();
-            console.log(json);
             return json.collection
                 .filter(item => item.kind === "track")
                 .map(item => parser(item));
@@ -98,7 +97,7 @@ SoundCloudDl.prototype = Object.create({}, {
             try {
                 if (!id) throw new Error("Function expect id parametr")
                 const clientId = await this.getClientId();
-                const trackUrl = `https://api-v2.soundcloud.com/tracks/${id}?client_id=${clientId}&app_version=1590494738`
+                const trackUrl = this.apiV2Url + `/tracks/${id}?client_id=${clientId}&app_version=1590494738`
                 const permalink = await fetch(trackUrl).then(res => res.json()).then(json => json.permalink_url);
                 const pageContent = await fetch(permalink).then(res => res.text());
                 const pattern = /https:\/\/api-v2\.soundcloud\.com\/media\/soundcloud:tracks:\d+\/[^\/]+\//;
@@ -115,15 +114,12 @@ SoundCloudDl.prototype = Object.create({}, {
                 if (!url) throw new Error("Can't find playlist url");
                 const m3u = await fetch(url).then(res => res.text()).then(playlist => m3uParser(playlist));
                 const duplex = new Duplexify();
-                const chunks = m3u.map(chunk => fetch(chunk.url));
                 const pipeChunk = async index => {
-                    //console.log(index)
-                    if (index > chunks.length - 1) {
+                    if (index > m3u.length - 1) {
                         return;
                     }
-                    const res = await chunks[index]
+                    const res = await fetch(m3u[index].url)
                     res.body.on("data", chunk => {
-                       // console.log(duplex.destroyed)
                         if(duplex.destroyed) return;
                         duplex.write(chunk)
 
@@ -131,7 +127,10 @@ SoundCloudDl.prototype = Object.create({}, {
                     res.body.on("end", () => pipeChunk(++index))
                 }
                 pipeChunk(0);
-                return duplex;
+                return {
+                    fileSize : fileSize(m3u),
+                    duplex
+                }
             } catch (err) {
                 console.log(err);
                 return null;

@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("express-cors");
+const cors = require("cors");
 const { renderHome } = require("./pages/homeTpl");
 const search = require("./routes/search");
 const download = require("./routes/download");
@@ -12,6 +12,7 @@ app.use(cors());
 
 app.use("/", search);
 app.use("/", download);
+
 
 app.get("/", (req, res) => {
     const home = renderHome({});
