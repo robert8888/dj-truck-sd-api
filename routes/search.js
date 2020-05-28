@@ -33,8 +33,9 @@ const resultParse = item => ({
 
 router.get("/search", async (req, res) =>{
     const query = req.query.q;
+    const maxResult = req.query.maxResult;
     const scdl = new SoundCloudDl();
-    const results = await scdl.search(query, 10, resultParse);
+    const results = await scdl.search(query, maxResult, resultParse);
     res.json(results);
 })
 
