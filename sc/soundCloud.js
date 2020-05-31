@@ -75,7 +75,6 @@ SoundCloudDl.prototype = Object.create({}, {
                 const callUrl = this.apiV2Url + `/resolve?url=${url}&client_id=${clientId}`;
                 json = await fetch(callUrl).then(res => res.json());    
             }
-            //console.log(json)
             return json
         }
     },
@@ -118,14 +117,17 @@ SoundCloudDl.prototype = Object.create({}, {
                 const pattern = /https:\/\/api-v2\.soundcloud\.com\/media\/soundcloud:tracks:\d+\/[^\/]+\//;
                 const match = pageContent.match(pattern)
                 if (!match) throw new Error("Unable to find hsl url");
+               
                 const hslUrl = [
                     match[0] + "stream/hls?client_id=" + clientId, 
                     match[0] + "preview/hls?client_id=" + clientId
                 ];
+
                 let url = null;
                 for (let i = 0; i < hslUrl.length && !url; i++) {
                     url = await fetch(hslUrl[i]).then(res => res.json()).then(json => json.url);
                 }
+
                 if (!url) throw new Error("Can't find playlist url");
                 const m3u = await fetch(url).then(res => res.text()).then(playlist => m3uParser(playlist));
 
@@ -177,11 +179,12 @@ SoundCloudDl.prototype = Object.create({}, {
                     res.body.on("end", () => pipeChunk(++index))
                 }
                 pipeChunk(startIndex);
-                
+
                 return {
                     fileSize : fileSize(m3u),
                     duplex
                 }
+
             } catch (err) {
                 console.log(err);
                 return null;
@@ -189,38 +192,6 @@ SoundCloudDl.prototype = Object.create({}, {
         }
     }, 
 
-    // stream : {
-    //     enumerable : false,
-    //     configurable: false,
-    //     writable : false,
-    //     value : async function (id, start, end) {
-    //         try {
-    //             const m3u =  await this._fetchM3u(id);
-    //             let {startIndex, startByte} = await chunkStart(m3u, start);
-
-    //             const duplex = new Duplexify();
-    //             const pipeChunk = async index => {
-    //                 if (index > m3u.length - 1) {
-    //                     return;
-    //                 }
-    //                 const res = await fetch(m3u[index].url);
-    //                 res.body.on("data", chunk => {
-    //                     if(duplex.destroyed) return;
-    //                     startByte += chunk;
-    //                     if(startByte < start) return;
-    //                     duplex.write(chunk)
-    //                 })
-    //                 res.body.on("end", () => pipeChunk(++index))
-    //             }
-    //             pipeChunk(startIndex);
-
-    //             return duplex;
-    //         } catch (err) {
-    //             console.log(err);
-    //             return null;
-    //         }
-    //     }
-    // }
 })
 
 module.exports = SoundCloudDl
