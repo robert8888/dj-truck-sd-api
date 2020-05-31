@@ -1,11 +1,13 @@
 const fetch = require("node-fetch");
-const { m3uParser, fileSize } = require("./utils");
+const { m3uParser, fileSize, chunkStart } = require("./utils");
 const Duplexify = require('duplexify');
 
 SoundCloudDl = function (searchParser) {
     this.serachParser = searchParser;
     this.urlBase = "https://soundcloud.com/";
     this.apiV2Url = "https://api-v2.soundcloud.com";
+
+    this._m3uCache = new Set();
 };
 
 SoundCloudDl.prototype = Object.create({}, {
@@ -99,12 +101,16 @@ SoundCloudDl.prototype = Object.create({}, {
         }
     },
 
-    download: {
+    _fetchM3u : {
         enumerable: false,
         configurable: false,
         writable: false,
-        value: async function (id) {
-            try {
+        value : async function(id){
+            try{
+                if(this._m3uCache.has(id)){
+                    return this._m3uCache.get(id);
+                }
+
                 if (!id) throw new Error("Function expect id parametr")
                 const clientId = await this.getClientId();
                 const permalink = (await this.resolve(id)).permalink_url;
@@ -122,20 +128,56 @@ SoundCloudDl.prototype = Object.create({}, {
                 }
                 if (!url) throw new Error("Can't find playlist url");
                 const m3u = await fetch(url).then(res => res.text()).then(playlist => m3uParser(playlist));
+
+                this._m3uCache.add(m3u);
+
+                return m3u;
+            } catch (error){
+                throw new Error("Durring fetch m3u list occure prolbem. " + error.message);
+            }
+        }
+    },
+
+    fileSize : {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value : async function(id){
+            const m3u = await this._fetchM3u(id);
+            return fileSize(m3u);
+        }
+    },
+
+    download: {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: async function (id, start, end) {
+            try {
+                const m3u =  await this._fetchM3u(id);
+                let startIndex = 0;
+                let startByte = 0;
+                if(start && end){
+                    ({startIndex, startByte} = await chunkStart(m3u, start));
+                }
+
                 const duplex = new Duplexify();
                 const pipeChunk = async index => {
-                    if (index > m3u.length - 1) {
-                        return;
-                    }
+                    if (index > m3u.length - 1) return;
+                    
                     const res = await fetch(m3u[index].url)
+
                     res.body.on("data", chunk => {
                         if(duplex.destroyed) return;
+                        startByte += chunk;
+                        if(startByte < start) return;
                         duplex.write(chunk)
-
                     })
+
                     res.body.on("end", () => pipeChunk(++index))
                 }
-                pipeChunk(0);
+                pipeChunk(startIndex);
+                
                 return {
                     fileSize : fileSize(m3u),
                     duplex
@@ -145,7 +187,40 @@ SoundCloudDl.prototype = Object.create({}, {
                 return null;
             }
         }
-    }
+    }, 
+
+    // stream : {
+    //     enumerable : false,
+    //     configurable: false,
+    //     writable : false,
+    //     value : async function (id, start, end) {
+    //         try {
+    //             const m3u =  await this._fetchM3u(id);
+    //             let {startIndex, startByte} = await chunkStart(m3u, start);
+
+    //             const duplex = new Duplexify();
+    //             const pipeChunk = async index => {
+    //                 if (index > m3u.length - 1) {
+    //                     return;
+    //                 }
+    //                 const res = await fetch(m3u[index].url);
+    //                 res.body.on("data", chunk => {
+    //                     if(duplex.destroyed) return;
+    //                     startByte += chunk;
+    //                     if(startByte < start) return;
+    //                     duplex.write(chunk)
+    //                 })
+    //                 res.body.on("end", () => pipeChunk(++index))
+    //             }
+    //             pipeChunk(startIndex);
+
+    //             return duplex;
+    //         } catch (err) {
+    //             console.log(err);
+    //             return null;
+    //         }
+    //     }
+    // }
 })
 
 module.exports = SoundCloudDl

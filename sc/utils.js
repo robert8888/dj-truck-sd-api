@@ -34,7 +34,34 @@ const fileSize = scM3u => {
     throw new Error("Can't find file size");
 }
 
+const getStart = url => {
+    const pattern = /https:\/\/cf-hls-media\.sndcdn\.com\/media\/(?<start>\d+)\//
+    const match = url.match(pattern);
+    if(!match){
+        throw new Error("Can't find chunk start pattern in url");
+    }
+    return match.groups.start;
+}
+
+const chunkStart = (scM3u, start) => {
+    try{
+        for(let i = 0 ; i < scM3u.length; i++){
+            const startByte = getStart(scM3u[i].url)
+            if(startByte > start){
+                return {
+                    startIndex: --i,
+                    startByte,
+                }
+            }
+        }
+    } catch (error) {
+        throw new Error("Can't find start chunk position " + error.message);
+    }     
+}
+
 module.exports = {
     m3uParser,
-    fileSize
+    fileSize,
+    chunkStart,
+    getStart,
 }
