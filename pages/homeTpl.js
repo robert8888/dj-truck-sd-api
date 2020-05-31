@@ -27,10 +27,10 @@ module.exports.renderHome = function(args){
            <h3>This is dj truck soundcloud api. </h3>
            <h5>SoundCluod Api contains follow routes:</h5>
            <ul>
-                <li>/download?id=</li>
-                <li>/search?id= &maxResult=</li>
-                <li>/stream?id - implemnted partial content  - header  206 </li>
-                <li>/resolve?id or resolve ?ulr - return track data info </li>
+                <li>/api/download?id=</li>
+                <li>/api/search?id= &maxResult=</li>
+                <li>/api/stream?id - implemnted partial content  - header  206 </li>
+                <li>/api/resolve?id or resolve ?ulr - return track data info </li>
            </ul>
         </main>
     </body>

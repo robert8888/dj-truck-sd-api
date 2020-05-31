@@ -13,10 +13,10 @@ const PORT = process.env.PORT || 80;
 const app = express();
 app.use(cors());
 
-app.use("/", search);
-app.use("/", download);
-app.use("/", stream);
-app.use("/", resolve);
+app.use("/api", search);
+app.use("/api", download);
+app.use("/api", stream);
+app.use("/api", resolve);
 
 app.get("/", (req, res) => {
     const home = renderHome({});
