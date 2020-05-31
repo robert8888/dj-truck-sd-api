@@ -29,6 +29,8 @@ module.exports.renderHome = function(args){
            <ul>
                 <li>/download?id=</li>
                 <li>/search?id= &maxResult=</li>
+                <li>/stream?id - implemnted partial content  - header  206 </li>
+                <li>/resolve?id or resolve ?ulr - return track data info </li>
            </ul>
         </main>
     </body>
